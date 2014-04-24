@@ -8,29 +8,29 @@ namespace CloudBerryDecrypter
 {
 	public class AmazonService
 	{
-		private AmazonS3 s3Client;
+		private readonly AmazonS3 _s3Client;
 
 		public AmazonService(string awsAccessKey, string awsSecretAccessKey)
 		{
-			this.s3Client = AWSClientFactory.CreateAmazonS3Client(awsAccessKey, awsSecretAccessKey);
-			this.s3Client.ListBuckets();
+			_s3Client = AWSClientFactory.CreateAmazonS3Client(awsAccessKey, awsSecretAccessKey);
+			_s3Client.ListBuckets();
 		}
 
 		public ReadOnlyCollection<S3Bucket> GetBuckets()
 		{
-			return this.s3Client.ListBuckets().Buckets.AsReadOnly();
+			return _s3Client.ListBuckets().Buckets.AsReadOnly();
 		}
 
 		public ReadOnlyCollection<S3Object> ListObjects(S3Bucket bucket)
 		{
 			var request = new ListObjectsRequest().WithBucketName(bucket.BucketName);
 
-			return this.s3Client.ListObjects(request).S3Objects.AsReadOnly();
+			return _s3Client.ListObjects(request).S3Objects.AsReadOnly();
 		}
 
 		public S3File GetS3File(S3Object s3Object)
 		{
-			var response = this.s3Client.GetObject(new GetObjectRequest()
+			var response = _s3Client.GetObject(new GetObjectRequest
 			{
 				BucketName = s3Object.BucketName,
 				Key = s3Object.Key
@@ -41,11 +41,11 @@ namespace CloudBerryDecrypter
 
 		private byte[] ReadFully(Stream input)
 		{
-			byte[] buffer = new byte[16 * 1024];
+			var buffer = new byte[16 * 1024];
 
 			using (var ms = new MemoryStream())
 			{
-				int read = 0;
+				int read;
 				while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
 				{
 					ms.Write(buffer, 0, read);

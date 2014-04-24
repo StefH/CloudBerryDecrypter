@@ -24,8 +24,8 @@ namespace CloudBerryDecrypter
 	{
 		public const string EncryptionInfo = "x-amz-meta-cb-encryptioninfo";
 
-		private static byte[] CBSalt = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 };
-		private static int CBIterations = 1000;
+		private static readonly byte[] CBSalt = { 0, 0, 0, 0, 0, 0, 0, 0 };
+		private const int CBIterations = 1000;
 
 		public CloudBerryCryptoService(string password)
 			: base(password, CBSalt, CBIterations)
@@ -34,14 +34,14 @@ namespace CloudBerryDecrypter
 
 		protected override DeriveBytes GetDeriveKey()
 		{
-			return new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(base.Password), base.Salt, base.Iterations);
+			return new Rfc2898DeriveBytes(Encoding.UTF8.GetBytes(Password), Salt, Iterations);
 		}
 
 		public void ProcessFile(byte[] content, string filePath, string encryptionInfo, string outputFolder, bool createFolders, bool unzip)
 		{
 			bool isCloudBerryEncrypted = false;
 
-			Algo Algo = Algo.None;
+			var algo = Algo.None;
 			int keySize = 0;
 			byte[] iv = null;
 			string compression = null;
@@ -49,9 +49,10 @@ namespace CloudBerryDecrypter
 			try
 			{
 				var fields = encryptionInfo.Split(';');
+
 				int version = Convert.ToInt32(fields[0]);
-				long SourceSize = Convert.ToInt64(fields[1]);
-				Enum.TryParse(fields[2], out Algo);
+				long sourceSize = Convert.ToInt64(fields[1]);
+				Enum.TryParse(fields[2], out algo);
 				keySize = Convert.ToInt32(fields[3]);
 				iv = Convert.FromBase64String(fields[4]);
 				compression = fields[6];
@@ -62,10 +63,9 @@ namespace CloudBerryDecrypter
 			{
 			}
 
-			byte[] decryptedBytes = isCloudBerryEncrypted ? base.Decrypt(Algo, keySize, iv, content) : content;
+			byte[] decryptedBytes = isCloudBerryEncrypted ? Decrypt(algo, keySize, iv, content) : content;
 
-			string folderName = null;
-
+			string folderName;
 			if (createFolders)
 			{
 				folderName = Path.Combine(outputFolder, Path.GetDirectoryName(filePath));

@@ -17,10 +17,10 @@ namespace CloudBerryDecrypter
 		private string S3Key;
 		private string S3Secret;
 		public AmazonService AmazonService;
-		private AppCryptoService AppCryptoService = new AppCryptoService();
-		private EditAmazonS3AccountForm EditAmazonS3Account;
-		private long TotalSize = 0;
-		private int numFiles = 0;
+		private readonly AppCryptoService _appCryptoService = new AppCryptoService();
+		private EditAmazonS3AccountForm _editAmazonS3Account;
+		private long _totalSize;
+		private int _numFiles;
 
 		public MainForm()
 		{
@@ -43,41 +43,41 @@ namespace CloudBerryDecrypter
 
 			treeView.Nodes.Add(refresh);
 
-			EditAmazonS3Account = new EditAmazonS3AccountForm(this);
+			_editAmazonS3Account = new EditAmazonS3AccountForm(this);
 		}
 
 		private void RefreshFiles()
 		{
-			if (this.AmazonService == null)
+			if (AmazonService == null)
 			{
-				this.CreateAmazonService();
+				CreateAmazonService();
 			}
 
-			this.btnRefresh.Text = "Busy...";
-			this.btnRefresh.Enabled = false;
-			this.BeginBlock();
+			btnRefresh.Text = "Busy...";
+			btnRefresh.Enabled = false;
+			BeginBlock();
 
 			treeView.Nodes.Clear();
-			this.TotalSize = 0;
-			this.numFiles = 0;
-			this.lblTotalSizeValue.Text = Utils.Utils.StrFormatByteSize(0);
-			this.lblSelectedFilesValue.Text = "0";
-			backgroundWorkerListObjects.RunWorkerAsync(this.AmazonService);
+			_totalSize = 0;
+			_numFiles = 0;
+			lblTotalSizeValue.Text = Utils.Utils.StrFormatByteSize(0);
+			lblSelectedFilesValue.Text = "0";
+			backgroundWorkerListObjects.RunWorkerAsync(AmazonService);
 		}
 
 		private void btnRefresh_Click(object sender, EventArgs e)
 		{
-			if (string.IsNullOrWhiteSpace(this.S3Key) || string.IsNullOrWhiteSpace(this.S3Secret))
+			if (string.IsNullOrWhiteSpace(S3Key) || string.IsNullOrWhiteSpace(S3Secret))
 			{
-				DialogResult result = this.EditAmazonS3Account.ShowDialog();
+				DialogResult result = _editAmazonS3Account.ShowDialog();
 
 				if (result == DialogResult.OK)
 				{
-					this.S3DisplayName = this.EditAmazonS3Account.txtS3DisplayName.Text;
-					this.S3Key = this.EditAmazonS3Account.txtS3Key.Text;
-					this.S3Secret = this.EditAmazonS3Account.txtS3Secret.Text;
+					S3DisplayName = _editAmazonS3Account.txtS3DisplayName.Text;
+					S3Key = _editAmazonS3Account.txtS3Key.Text;
+					S3Secret = _editAmazonS3Account.txtS3Secret.Text;
 
-					this.CreateAmazonService();
+					CreateAmazonService();
 				}
 			}
 			else
@@ -88,32 +88,32 @@ namespace CloudBerryDecrypter
 
 		private void BeginBlock()
 		{
-			this.Cursor = Cursors.WaitCursor;
-			this.treeView.Enabled = false;
-			this.btnRefresh.Enabled = false;
-			this.btnBrowseOutputFolder.Enabled = false;
-			this.chkUnzip.Enabled = false;
-			this.chkCreateFolders.Enabled = false;
-			this.txtPassword.Enabled = false;
-			this.txtOutputFolder.Enabled = false;
+			Cursor = Cursors.WaitCursor;
+			treeView.Enabled = false;
+			btnRefresh.Enabled = false;
+			btnBrowseOutputFolder.Enabled = false;
+			chkUnzip.Enabled = false;
+			chkCreateFolders.Enabled = false;
+			txtPassword.Enabled = false;
+			txtOutputFolder.Enabled = false;
 		}
 
 		private void EndBlock()
 		{
-			this.Cursor = Cursors.Default;
-			this.btnRefresh.Enabled = true;
-			this.btnBrowseOutputFolder.Enabled = true;
-			this.chkUnzip.Enabled = true;
-			this.chkCreateFolders.Enabled = true;
-			this.treeView.Enabled = true;
-			this.txtPassword.Enabled = true;
-			this.txtOutputFolder.Enabled = true;
+			Cursor = Cursors.Default;
+			btnRefresh.Enabled = true;
+			btnBrowseOutputFolder.Enabled = true;
+			chkUnzip.Enabled = true;
+			chkCreateFolders.Enabled = true;
+			treeView.Enabled = true;
+			txtPassword.Enabled = true;
+			txtOutputFolder.Enabled = true;
 		}
 
 		private void btnGo_Click(object sender, EventArgs args)
 		{
-			string password = this.txtPassword.Text;
-			string outputFolder = this.txtOutputFolder.Text;
+			string password = txtPassword.Text;
+			string outputFolder = txtOutputFolder.Text;
 
 			var selectedNodes = new List<TreeNode>();
 			GetCheckedNodes(treeView.Nodes, selectedNodes);
@@ -128,15 +128,15 @@ namespace CloudBerryDecrypter
 				}
 				else
 				{
-					this.BeginBlock();
+					BeginBlock();
 
 					backgroundWorker.RunWorkerAsync(new ProcessSettings
 					{
-						AmazonService = this.AmazonService,
+						AmazonService = AmazonService,
 						CloudBerryPassword = password,
 						S3Objects = selectedNodes.Where(n => n.Tag is S3Object).Select(n => n.Tag as S3Object).ToList(),
-						CreateFolders = this.chkCreateFolders.Checked,
-						Unzip = this.chkUnzip.Checked,
+						CreateFolders = chkCreateFolders.Checked,
+						Unzip = chkUnzip.Checked,
 						OutputFolder = outputFolder
 					});
 
@@ -152,35 +152,35 @@ namespace CloudBerryDecrypter
 
 		private void btnBrowseOutputFolder_Click(object sender, EventArgs e)
 		{
-			DialogResult result = this.folderBrowserDialog.ShowDialog();
+			DialogResult result = folderBrowserDialog.ShowDialog();
 			if (result == DialogResult.OK)
 			{
-				this.txtOutputFolder.Text = this.folderBrowserDialog.SelectedPath;
+				txtOutputFolder.Text = folderBrowserDialog.SelectedPath;
 			}
 		}
 
 		#region Save / Load
 		private void MainForm_Load(object sender, EventArgs e)
 		{
-			this.txtPassword.Text = this.AppCryptoService.DecryptText(Settings.Default.Password);
-			this.txtOutputFolder.Text = Settings.Default.OutputFolder;
-			this.chkUnzip.Checked = Settings.Default.UnzipFiles;
-			this.chkCreateFolders.Checked = Settings.Default.CreateFolders;
+			txtPassword.Text = _appCryptoService.DecryptText(Settings.Default.Password);
+			txtOutputFolder.Text = Settings.Default.OutputFolder;
+			chkUnzip.Checked = Settings.Default.UnzipFiles;
+			chkCreateFolders.Checked = Settings.Default.CreateFolders;
 
-			this.S3DisplayName = Settings.Default.S3DisplayName;
-			this.S3Key = this.AppCryptoService.DecryptText(Settings.Default.S3Key);
-			this.S3Secret = this.AppCryptoService.DecryptText(Settings.Default.S3Secret);
+			S3DisplayName = Settings.Default.S3DisplayName;
+			S3Key = _appCryptoService.DecryptText(Settings.Default.S3Key);
+			S3Secret = _appCryptoService.DecryptText(Settings.Default.S3Secret);
 		}
 
 		private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
 		{
-			Settings.Default.Password = this.AppCryptoService.EncryptText(this.txtPassword.Text);
-			Settings.Default.S3Key = this.AppCryptoService.EncryptText(this.S3Key);
-			Settings.Default.S3Secret = this.AppCryptoService.EncryptText(this.S3Secret);
-			Settings.Default.S3DisplayName = this.S3DisplayName;
-			Settings.Default.OutputFolder = this.txtOutputFolder.Text;
-			Settings.Default.UnzipFiles = this.chkUnzip.Checked;
-			Settings.Default.CreateFolders = this.chkCreateFolders.Checked;
+			Settings.Default.Password = _appCryptoService.EncryptText(txtPassword.Text);
+			Settings.Default.S3Key = _appCryptoService.EncryptText(S3Key);
+			Settings.Default.S3Secret = _appCryptoService.EncryptText(S3Secret);
+			Settings.Default.S3DisplayName = S3DisplayName;
+			Settings.Default.OutputFolder = txtOutputFolder.Text;
+			Settings.Default.UnzipFiles = chkUnzip.Checked;
+			Settings.Default.CreateFolders = chkCreateFolders.Checked;
 
 			Settings.Default.Save();
 		}
@@ -249,8 +249,10 @@ namespace CloudBerryDecrypter
 					if (!string.IsNullOrEmpty(text))
 					{
 						string nodeText = string.Format("{0} ({1})", text, Utils.Utils.StrFormatByteSize(s3Object.Size));
-						var fileNode = new TreeNode(nodeText);
-						fileNode.Tag = s3Object;
+						var fileNode = new TreeNode(nodeText)
+						{
+							Tag = s3Object
+						};
 						fileNode.ImageKey = fileNode.SelectedImageKey = "File";
 						parentNode.Nodes.Add(fileNode);
 					}
@@ -275,11 +277,11 @@ namespace CloudBerryDecrypter
 				childNode.Checked = nodeChecked;
 
 				// If the current node has child nodes, call the CheckAllChildsNodes method recursively.
-				this.CheckAllChildNodes(childNode, nodeChecked, ref totalSize, ref numFiles);
+				CheckAllChildNodes(childNode, nodeChecked, ref totalSize, ref numFiles);
 			}
 
-			this.lblSelectedFilesValue.Text = numFiles.ToString();
-			this.lblTotalSizeValue.Text = Utils.Utils.StrFormatByteSize(TotalSize);
+			lblSelectedFilesValue.Text = numFiles.ToString();
+			lblTotalSizeValue.Text = Utils.Utils.StrFormatByteSize(_totalSize);
 		}
 
 		private void treeView_AfterCheck(object sender, TreeViewEventArgs e)
@@ -289,7 +291,7 @@ namespace CloudBerryDecrypter
 			{
 				// Calls the CheckAllChildNodes method, passing in the current 
 				// Checked value of the TreeNode whose checked state changed.
-				this.CheckAllChildNodes(e.Node, e.Node.Checked, ref TotalSize, ref numFiles);
+				CheckAllChildNodes(e.Node, e.Node.Checked, ref _totalSize, ref _numFiles);
 			}
 		}
 
@@ -311,7 +313,7 @@ namespace CloudBerryDecrypter
 			string tag = e.Node.Tag as string;
 			if (tag == "Refresh")
 			{
-				this.RefreshFiles();
+				RefreshFiles();
 			}
 		}
 		#endregion
@@ -320,14 +322,14 @@ namespace CloudBerryDecrypter
 		{
 			try
 			{
-				this.AmazonService = new AmazonService(this.S3Key, this.S3Secret);
-				this.lblStatusValue.Text = string.Format("Connected to Amazon S3 '{0}'", this.S3DisplayName);
-				this.lblStatusValue.ForeColor = Color.Green;
+				AmazonService = new AmazonService(S3Key, S3Secret);
+				lblStatusValue.Text = string.Format("Connected to Amazon S3 '{0}'", S3DisplayName);
+				lblStatusValue.ForeColor = Color.Green;
 			}
 			catch
 			{
-				this.lblStatusValue.Text = string.Format("Error connecting to Amazon S3 '{0}'", this.S3DisplayName);
-				this.lblStatusValue.ForeColor = Color.Red;
+				lblStatusValue.Text = string.Format("Error connecting to Amazon S3 '{0}'", S3DisplayName);
+				lblStatusValue.ForeColor = Color.Red;
 			}
 		}
 
@@ -375,19 +377,12 @@ namespace CloudBerryDecrypter
 
 		private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
-			if (e.Cancelled)
-			{
-				progressBar.Value = 0;
-			}
-			else
-			{
-				progressBar.Value = 100;
-			}
+			progressBar.Value = e.Cancelled ? 0 : 100;
 
-			this.btnGo.Enabled = true;
-			this.btnGo.Text = "Decrypt";
+			btnGo.Enabled = true;
+			btnGo.Text = "Decrypt";
 
-			this.EndBlock();
+			EndBlock();
 		}
 
 		private void backgroundWorkerListObjects_DoWork(object sender, DoWorkEventArgs e)
@@ -416,26 +411,26 @@ namespace CloudBerryDecrypter
 
 		private void backgroundWorkerListObjects_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
-			this.btnRefresh.Enabled = true;
-			this.btnRefresh.Text = "Refresh";
-			this.EndBlock();
+			btnRefresh.Enabled = true;
+			btnRefresh.Text = "Refresh";
+			EndBlock();
 		}
 		#endregion BackgroundWorker
 
 		private void amazonS3AccountToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			this.EditAmazonS3Account.txtS3DisplayName.Text = this.S3DisplayName;
-			this.EditAmazonS3Account.txtS3Key.Text = this.S3Key;
-			this.EditAmazonS3Account.txtS3Secret.Text = this.S3Secret;
-			DialogResult result = this.EditAmazonS3Account.ShowDialog();
+			_editAmazonS3Account.txtS3DisplayName.Text = S3DisplayName;
+			_editAmazonS3Account.txtS3Key.Text = S3Key;
+			_editAmazonS3Account.txtS3Secret.Text = S3Secret;
+			DialogResult result = _editAmazonS3Account.ShowDialog();
 
 			if (result == DialogResult.OK)
 			{
-				this.S3DisplayName = this.EditAmazonS3Account.txtS3DisplayName.Text;
-				this.S3Key = this.EditAmazonS3Account.txtS3Key.Text;
-				this.S3Secret = this.EditAmazonS3Account.txtS3Secret.Text;
+				S3DisplayName = _editAmazonS3Account.txtS3DisplayName.Text;
+				S3Key = _editAmazonS3Account.txtS3Key.Text;
+				S3Secret = _editAmazonS3Account.txtS3Secret.Text;
 
-				this.CreateAmazonService();
+				CreateAmazonService();
 			}
 		}
 
@@ -443,11 +438,11 @@ namespace CloudBerryDecrypter
 		{
 			var chk = sender as CheckBox;
 
-			foreach (TreeNode node in this.treeView.Nodes)
+			foreach (TreeNode node in treeView.Nodes)
 			{
 
 				node.Checked = chk.Checked;
-				this.CheckAllChildNodes(node, node.Checked, ref this.TotalSize, ref this.numFiles);
+				CheckAllChildNodes(node, node.Checked, ref _totalSize, ref _numFiles);
 			}
 
 			if (!chk.Checked)

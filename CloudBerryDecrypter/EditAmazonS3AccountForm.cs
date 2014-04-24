@@ -5,11 +5,11 @@ namespace CloudBerryDecrypter
 {
 	public partial class EditAmazonS3AccountForm : Form
 	{
-		private MainForm MainForm;
+		private readonly MainForm _mainForm;
 
 		public EditAmazonS3AccountForm(MainForm mainform)
 		{
-			this.MainForm = mainform;
+			_mainForm = mainform;
 
 			InitializeComponent();
 		}
@@ -20,11 +20,11 @@ namespace CloudBerryDecrypter
 
 			try
 			{
-				this.MainForm.AmazonService = new AmazonService(this.txtS3Key.Text, this.txtS3Secret.Text);
+				_mainForm.AmazonService = new AmazonService(txtS3Key.Text, txtS3Secret.Text);
 			}
 			catch
 			{
-				form.BackgroundImage = global::CloudBerryDecrypter.ImageResources.ConnectionFailed;
+				form.BackgroundImage = ImageResources.ConnectionFailed;
 			}
 
 			form.ShowDialog();

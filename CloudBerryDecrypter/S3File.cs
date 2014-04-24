@@ -12,18 +12,18 @@ namespace CloudBerryDecrypter
 
 		public S3File(string key, byte[] content, WebHeaderCollection headers)
 		{
-			this.Key = key;
-			this.Content = content;
-			this.Headers = headers;
+			Key = key;
+			Content = content;
+			Headers = headers;
 
-			this.SafeFilepath = AmazonService.GetSafeFilepath(key);
+			SafeFilepath = AmazonService.GetSafeFilepath(key);
 		}
 
 		public string Filename
 		{
 			get
 			{
-				return Path.GetFileName(this.SafeFilepath);
+				return Path.GetFileName(SafeFilepath);
 			}
 		}
 
@@ -31,7 +31,7 @@ namespace CloudBerryDecrypter
 		{
 			get
 			{
-				return this.Headers[CloudBerryCryptoService.EncryptionInfo];
+				return Headers[CloudBerryCryptoService.EncryptionInfo];
 			}
 		}
 	}

@@ -20,9 +20,9 @@ namespace CloudBerryDecrypter
 
 		public CryptoService(string password, byte[] salt, int iterations)
 		{
-			this.Password = password;
-			this.Salt = salt;
-			this.Iterations = iterations;
+			Password = password;
+			Salt = salt;
+			Iterations = iterations;
 		}
 
 		protected virtual DeriveBytes GetDeriveKey()
@@ -32,9 +32,9 @@ namespace CloudBerryDecrypter
 
 		public byte[] Decrypt(Algo algo, int keySize, byte[] iv, byte[] encryptedBytes)
 		{
-			byte[] decryptedData = new byte[] { };
+			// var decryptedData = new byte[] { };
 
-			SymmetricAlgorithm provider = null;
+			SymmetricAlgorithm provider;
 			switch (algo)
 			{
 				case Algo.AES:
@@ -52,11 +52,14 @@ namespace CloudBerryDecrypter
 				case Algo.RC2:
 					provider = new RC2CryptoServiceProvider();
 					break;
+				
+				default:
+					return null;
 			}
 
 			provider.KeySize = keySize;
 			provider.IV = iv;
-			provider.Key = this.GetDeriveKey().GetBytes(keySize / 8);
+			provider.Key = GetDeriveKey().GetBytes(keySize / 8);
 
 			using (var decrypter = provider.CreateDecryptor())
 			{
@@ -66,9 +69,9 @@ namespace CloudBerryDecrypter
 
 		public byte[] Encrypt(Algo algo, int keySize, byte[] iv, byte[] bytes)
 		{
-			byte[] encryptedData = new byte[] { };
+			// var encryptedData = new byte[] { };
 
-			SymmetricAlgorithm provider = null;
+			SymmetricAlgorithm provider;
 			switch (algo)
 			{
 				case Algo.AES:
@@ -86,11 +89,14 @@ namespace CloudBerryDecrypter
 				case Algo.RC2:
 					provider = new RC2CryptoServiceProvider();
 					break;
+
+				default:
+					return null;
 			}
 
 			provider.KeySize = keySize;
 			provider.IV = iv;
-			provider.Key = this.GetDeriveKey().GetBytes(keySize / 8);
+			provider.Key = GetDeriveKey().GetBytes(keySize / 8);
 
 			using (var decrypter = provider.CreateEncryptor())
 			{
